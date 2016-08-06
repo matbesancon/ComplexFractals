@@ -1,12 +1,15 @@
-/**
-  * Created by mbesancon on 06.08.16.
-  */
+package ComplexNumbers
 
 import Math.sqrt;
 import Math.atan2;
 import Math.cos;
 import Math.sin;
-import Math.abs;
+
+import BasicFunctions.nearZero;
+
+/**
+  * Created by mbesancon on 8/6/16.
+  */
 
 abstract class Complex {
   val real: Double
@@ -21,12 +24,21 @@ abstract class Complex {
   def +(that: Double): Complex =
     new CartesianComplex(this.real+that,this.imaginary)
   def -(that: Double): Complex = this+(-that)
-//    new CartesianComplex(this.real-that,this.imaginary)
+  def isNull: Boolean = nearZero(real) && nearZero(imaginary)
+
+  def /(that: Complex) = if (that.isNull) None else {
+    that.inverse match {
+      case None => None
+      case Some(z) => Some(this * z)
+    }
+  }
+
+  // abstract methods, implemented in inherited
   def *(that: Complex): Complex
   def *(that: Double): Complex
-  def /(that: Complex): Option[Complex]
   def /(that: Double): Option[Complex]
   def conjugate: Complex
+  def inverse: Option[Complex]
 }
 
 class CartesianComplex(realPart: Double, imagPart: Double = 0) extends Complex{
@@ -38,10 +50,14 @@ class CartesianComplex(realPart: Double, imagPart: Double = 0) extends Complex{
     new CartesianComplex(this.real*that.real-this.imaginary*that.imaginary,this.real*that.imaginary-this.imaginary*that.real)
   def *(that: Double) =
     new CartesianComplex(this.real*that,this.imaginary*that)
-  def /(that: Complex)
 
-  // TODO: continue here 
-  def /(that: Double) = if (that!=0) Some(this*(1/that)) else None
+  def inverse = if(this.isNull) None else Some(
+    new CartesianComplex(
+      this.real/(this.real*this.real+this.imaginary*this.imaginary)
+    )
+  )
+
+  def /(that: Double) = if (!nearZero(that)) Some(this*(1/that)) else None
   def conjugate: Complex = new CartesianComplex(this.real,-this.imaginary)
 }
 
@@ -50,4 +66,16 @@ class PolarComplex(givenRadius: Double, givenArg: Double = 0) extends Complex{
   val imaginary = givenRadius*sin(givenArg)
   val radius = givenRadius
   val argument = givenArg
+
+  def *(that: Complex) =
+    new PolarComplex(this.radius*that.radius,this.real*that.imaginary-this.imaginary*that.real)
+
+  def *(that: Double) =
+    new CartesianComplex(this.real*that,this.imaginary*that)
+
+  def /(that: Double) = if (!nearZero(that)) Some(this*(1/that)) else None
+  def conjugate: Complex = new CartesianComplex(this.real,-this.imaginary)
+  def inverse = if(this.isNull) None else Some(
+    new PolarComplex(1/this.radius,1/this.argument)
+  )
 }
